@@ -38,8 +38,10 @@
 #include <sys/un.h>
 #include <sys/wait.h>
 
-#include "pthreadP.h"
-
+/* The signal used for asynchronous cancelation.  */
+#ifndef SIGCANCEL
+# define SIGCANCEL       __SIGRTMIN
+#endif
 
 /* Since STREAMS are not supported in the standard Linux kernel and
    there we don't advertise STREAMS as supported is no need to test
@@ -247,6 +249,9 @@ tf_write  (void *arg)
   char buf[WRITE_BUFFER_SIZE];
   memset (buf, '\0', sizeof (buf));
   s = write (fd, buf, sizeof (buf));
+  /* The write can return a value higher than 0 (meaning partial write)
+     due the SIGCANCEL, but the thread may still pending cancellation.  */
+  pthread_testcancel ();
 
   pthread_cleanup_pop (0);
 
@@ -1143,6 +1148,8 @@ tf_send (void *arg)
   char mem[700000];
 
   send (tempfd2, mem, arg == NULL ? sizeof (mem) : 1, 0);
+  /* Check for partial send.  */
+  pthread_testcancel ();
 
   pthread_cleanup_pop (0);
 
@@ -1425,6 +1432,38 @@ tf_open (void *arg)
   exit (1);
 }
 
+static void *
+tf_open64 (void *arg)
+{
+  if (arg == NULL)
+    // XXX If somebody can provide a portable test case in which open()
+    // blocks we can enable this test to run in both rounds.
+    abort ();
+
+  int r = pthread_barrier_wait (&b2);
+  if (r != 0 && r != PTHREAD_BARRIER_SERIAL_THREAD)
+    {
+      printf ("%s: barrier_wait failed\n", __FUNCTION__);
+      exit (1);
+    }
+
+  r = pthread_barrier_wait (&b2);
+  if (r != 0 && r != PTHREAD_BARRIER_SERIAL_THREAD)
+    {
+      printf ("%s: 2nd barrier_wait failed\n", __FUNCTION__);
+      exit (1);
+    }
+
+  pthread_cleanup_push (cl, NULL);
+
+  open64 ("Makefile", O_RDONLY);
+
+  pthread_cleanup_pop (0);
+
+  printf ("%s: open returned\n", __FUNCTION__);
+
+  exit (1);
+}
 
 static void *
 tf_close (void *arg)
@@ -1510,6 +1549,46 @@ tf_pread (void *arg)
   exit (1);
 }
 
+static void *
+tf_pread64 (void *arg)
+{
+  if (arg == NULL)
+    // XXX If somebody can provide a portable test case in which pread()
+    // blocks we can enable this test to run in both rounds.
+    abort ();
+
+  tempfd = open64 ("Makefile", O_RDONLY);
+  if (tempfd == -1)
+    {
+      printf ("%s: cannot open64 Makefile\n", __FUNCTION__);
+      exit (1);
+    }
+
+  int r = pthread_barrier_wait (&b2);
+  if (r != 0 && r != PTHREAD_BARRIER_SERIAL_THREAD)
+    {
+      printf ("%s: barrier_wait failed\n", __FUNCTION__);
+      exit (1);
+    }
+
+  r = pthread_barrier_wait (&b2);
+  if (r != 0 && r != PTHREAD_BARRIER_SERIAL_THREAD)
+    {
+      printf ("%s: 2nd barrier_wait failed\n", __FUNCTION__);
+      exit (1);
+    }
+
+  pthread_cleanup_push (cl, NULL);
+
+  char mem[10];
+  pread64 (tempfd, mem, sizeof (mem), 0);
+
+  pthread_cleanup_pop (0);
+
+  printf ("%s: pread64 returned\n", __FUNCTION__);
+
+  exit (1);
+}
 
 static void *
 tf_pwrite (void *arg)
@@ -1554,6 +1633,48 @@ tf_pwrite (void *arg)
   exit (1);
 }
 
+static void *
+tf_pwrite64 (void *arg)
+{
+  if (arg == NULL)
+    // XXX If somebody can provide a portable test case in which pwrite()
+    // blocks we can enable this test to run in both rounds.
+    abort ();
+
+  char fname[] = "/tmp/tst-cancel4-fd-XXXXXX";
+  tempfd = mkstemp (fname);
+  if (tempfd == -1)
+    {
+      printf ("%s: mkstemp failed\n", __FUNCTION__);
+      exit (1);
+    }
+  unlink (fname);
+
+  int r = pthread_barrier_wait (&b2);
+  if (r != 0 && r != PTHREAD_BARRIER_SERIAL_THREAD)
+    {
+      printf ("%s: barrier_wait failed\n", __FUNCTION__);
+      exit (1);
+    }
+
+  r = pthread_barrier_wait (&b2);
+  if (r != 0 && r != PTHREAD_BARRIER_SERIAL_THREAD)
+    {
+      printf ("%s: 2nd barrier_wait failed\n", __FUNCTION__);
+      exit (1);
+    }
+
+  pthread_cleanup_push (cl, NULL);
+
+  char mem[10];
+  pwrite64 (tempfd, mem, sizeof (mem), 0);
+
+  pthread_cleanup_pop (0);
+
+  printf ("%s: pwrite64 returned\n", __FUNCTION__);
+
+  exit (1);
+}
 
 static void *
 tf_fsync (void *arg)
@@ -2141,9 +2262,12 @@ static struct
   ADD_TEST (recvfrom, 2, 0),
   ADD_TEST (recvmsg, 2, 0),
   ADD_TEST (open, 2, 1),
+  ADD_TEST (open64, 2, 1),
   ADD_TEST (close, 2, 1),
   ADD_TEST (pread, 2, 1),
+  ADD_TEST (pread64, 2, 1),
   ADD_TEST (pwrite, 2, 1),
+  ADD_TEST (pwrite64, 2, 1),
   ADD_TEST (fsync, 2, 1),
   ADD_TEST (fdatasync, 2, 1),
   ADD_TEST (msync, 2, 1),

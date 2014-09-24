@@ -1,5 +1,19 @@
 2015-06-10  Adhemerval Zanella  <adhemerval.zanella@linaro.org>
 
+	* nptl/Makefile [$(run-built-tests) = yes] (tests-special): Remove
+	tst-cancel-wrappers.sh.
+	* nptl/tst-cancel-wrappers.sh: Remove file.
+	* nptl/tst-cancel2.c (tf): Add pthread_testcancel after cancellable
+	syscall.
+	* nptl/tst-cancel20.c (sh_body): Likewise.
+	* nptl/tst-cancel21.c (sh_body): Likewise.
+	(tf_body): Likewise.
+	* nptl/tst-cancel4.c (tf_Write): Likewise.
+	(tf_send): Likewise.
+	(tf_open64): New test: check for open64 cancellable syscall.
+	(tf_pread64): New test: check for pread64 cancellable syscall.
+	(tf_pwrite64): New test: check for pwrite64 cancellable syscall.
+
 	* sysdeps/unix/sysv/linux/x86_64/librt-cancellation.S: Remove file.
 	* sysdeps/unix/sysv/linux/x86_64/pthread_cond_timedwait.S: Remove
 
