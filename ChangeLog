@@ -1,5 +1,8 @@
 2015-06-10  Adhemerval Zanella  <adhemerval.zanella@linaro.org>
 
+	* sysdeps/unix/sysv/linux/x86_64/librt-cancellation.S: Remove file.
+	* sysdeps/unix/sysv/linux/x86_64/pthread_cond_timedwait.S: Remove
+
 	* sysdeps/unix/sysv/linux/i386/i486/pthread_cond_timedwait.S: Remove
 	file.
 	* sysdeps/unix/sysv/linux/i386/i486/pthread_cond_wait.S: Likewise.
