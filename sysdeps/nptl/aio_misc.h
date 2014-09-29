@@ -21,6 +21,7 @@
    correct aio_suspend and lio_listio implementations.  */
 
 #include <assert.h>
+#include <stdio.h>
 #include <nptl/pthreadP.h>
 #include <nptl/futex-internal.h>
 
@@ -41,15 +42,11 @@
       {									      \
 	pthread_mutex_unlock (&__aio_requests_mutex);			      \
 									      \
-	int oldtype;							      \
-	if (cancel)							      \
-	  oldtype = LIBC_CANCEL_ASYNC ();				      \
-									      \
 	int status;							      \
 	do								      \
 	  {								      \
-	    status = futex_reltimed_wait ((unsigned int *) futexaddr,	      \
-					  oldval, timeout, FUTEX_PRIVATE);    \
+	    status = futex_reltimed_wait_cancelable (			      \
+		(unsigned int *) futexaddr, oldval, timeout, FUTEX_PRIVATE);  \
 	    if (status != EAGAIN)					      \
 	      break;							      \
 									      \
@@ -57,15 +54,12 @@
 	  }								      \
 	while (oldval != 0);						      \
 									      \
-	if (cancel)							      \
-	  LIBC_CANCEL_RESET (oldtype);					      \
-									      \
 	if (status == EINTR)						      \
 	  result = EINTR;						      \
 	else if (status == ETIMEDOUT)					      \
 	  result = EAGAIN;						      \
 	else								      \
-	  assert (status == 0 || status == EAGAIN);			      \
+	  assert (status == 0 || status == -EAGAIN);			      \
 									      \
 	pthread_mutex_lock (&__aio_requests_mutex);			      \
       }									      \

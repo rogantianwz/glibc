@@ -106,6 +106,18 @@
     ret;								    \
   })
 
+#define lll_futex_abstimed_wait_cancel(futexp, val, abstime, private)	    \
+  ({									    \
+    int ret;								    \
+    if (__glibc_unlikely (((abstime) != NULL) && ((abstime)->tv_sec < 0)))  \
+      ret = -ETIMEDOUT;							    \
+    else								    \
+      ret = lll_futex_timed_wait_bitset_cancel (futexp, val, abstime,	    \
+						FUTEX_CLOCK_REALTIME,	    \
+						private);		    \
+    ret;								    \
+  })
+
 #define lll_futex_timed_wait_bitset(futexp, val, timeout, clockbit, private) \
   lll_futex_syscall (6, futexp,                                         \
 		     __lll_private_flag (FUTEX_WAIT_BITSET | (clockbit), \
@@ -149,6 +161,50 @@
 					 private),                      \
 		     nr_wake, nr_move, mutex, val)
 
-#endif  /* !__ASSEMBLER__  */
+/* Cancellable futex macros.  */
+#define lll_futex_wait_cancel(futexp, val, private) \
+  lll_futex_timed_wait_cancel (futexp, val, NULL, private)
+
+#define lll_futex_timed_wait_cancel(futexp, val, timespec, private)	      \
+  ({									      \
+    long int __ret;							      \
+    int __op = FUTEX_WAIT;						      \
+                                                                              \
+    __ret = __syscall_cancel (__NR_futex, __SSC (futexp),		      \
+			      __SSC (__lll_private_flag (__op, private)),     \
+			      __SSC (val), __SSC (timespec), 0, 0);           \
+    __ret;								      \
+  })
+
+#define lll_futex_timed_wait_bitset_cancel(futexp, val, timespec, clockbit,   \
+					   private)			      \
+  ({                                                                          \
+    long int __ret;                                                           \
+    int __op = FUTEX_WAIT_BITSET | clockbit;                                  \
+                                                                              \
+    __ret = __syscall_cancel (__NR_futex, __SSC (futexp),		      \
+			      __SSC (__lll_private_flag (__op, private)),     \
+			      __SSC (val), __SSC (timespec), 0,	              \
+                              FUTEX_BITSET_MATCH_ANY);                        \
+    __ret;								      \
+  })
+
+#define lll_futex_wait_requeue_pi_cancel(futexp, val, mutex, private) \
+  lll_futex_timed_wait_requeue_pi_cancel (futexp, val, NULL, 0, mutex, private)
+
+#define lll_futex_timed_wait_requeue_pi_cancel(futexp, val, timespec, 	      \
+					       clockbit, mutex, private)      \
+  ({									      \
+    long int __ret;							      \
+    int __op = FUTEX_WAIT_REQUEUE_PI | clockbit;			      \
+									      \
+    __ret = __syscall_cancel (__NR_futex, __SSC (futexp),		      \
+			      __SSC (__lll_private_flag (__op, private)),     \
+			      __SSC (val), __SSC (timespec),		      \
+			      __SSC (mutex), 0); 		      	      \
+    __ret;								      \
+  })
+
+# endif  /* !__ASSEMBLER__  */
 
 #endif  /* lowlevellock-futex.h */

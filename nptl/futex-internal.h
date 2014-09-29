@@ -134,10 +134,7 @@ static __always_inline int
 futex_wait_cancelable (unsigned int *futex_word, unsigned int expected,
 		       int private)
 {
-  int oldtype;
-  oldtype = __pthread_enable_asynccancel ();
-  int err = lll_futex_timed_wait (futex_word, expected, NULL, private);
-  __pthread_disable_asynccancel (oldtype);
+  int err = lll_futex_timed_wait_cancel (futex_word, expected, NULL, private);
   switch (err)
     {
     case 0:
@@ -200,10 +197,8 @@ futex_reltimed_wait_cancelable (unsigned int* futex_word,
 				unsigned int expected,
 			        const struct timespec* reltime, int private)
 {
-  int oldtype;
-  oldtype = __pthread_enable_asynccancel ();
-  int err = lll_futex_timed_wait (futex_word, expected, reltime, private);
-  __pthread_disable_asynccancel (oldtype);
+  int err = lll_futex_timed_wait_cancel (futex_word, expected, reltime,
+					 private);
   switch (err)
     {
     case 0:
@@ -255,10 +250,8 @@ futex_abstimed_wait_cancelable (unsigned int* futex_word,
 				unsigned int expected,
 			        const struct timespec* abstime, int private)
 {
-  int oldtype;
-  oldtype = __pthread_enable_asynccancel ();
-  int err = lll_futex_abstimed_wait (futex_word, expected, abstime, private);
-  __pthread_disable_asynccancel (oldtype);
+  int err = lll_futex_abstimed_wait_cancel (futex_word, expected, abstime,
+					    private);
   switch (err)
     {
     case 0:
