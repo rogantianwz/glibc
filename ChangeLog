@@ -1,3 +1,8 @@
+2015-02-12  Roland McGrath  <roland@hack.frob.com>
+
+	* csu/Makefile ($(objpfx)abi-tag.h): Handle abi-tags files in add-on
+	directories too.
+
 2015-02-12  Rüdiger Sonderfeld  <ruediger@c-plusplus.net>
 
 	[BZ #17965]
