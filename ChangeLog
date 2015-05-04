@@ -1,3 +1,13 @@
+2015-06-10  Adhemerval Zanella  <adhemerval.zanella@linaro.org>
+
+	* sysdeps/unix/sysv/linux/i386/i486/pthread_cond_timedwait.S: Remove
+	file.
+	* sysdeps/unix/sysv/linux/i386/i486/pthread_cond_wait.S: Likewise.
+	* sysdeps/unix/sysv/linux/i386/i586/pthread_cond_timedwait.S: Likewise.
+	* sysdeps/unix/sysv/linux/i386/i586/pthread_cond_wait.S: Likewise.
+	* sysdeps/unix/sysv/linux/i386/i686/pthread_cond_timedwait.S: Likewise.
+	* sysdeps/unix/sysv/linux/i386/i686/pthread_cond_wait.S: Likewise.
+
 2015-06-10  Gleb Fotengauer-Malinovskiy  <glebfm@altlinux.org>
 
 	[BZ #18479]
