@@ -1,5 +1,18 @@
 2015-06-10  Adhemerval Zanella  <adhemerval.zanella@linaro.org>
 
+	* sysdeps/i386/nptl/tls.h (THREAD_ATOMIC_BIT_SET): Remove macro.
+	* sysdeps/unix/sysv/linux/i386/Makefile
+	[$(subdir) = elf] (sysdep-rtld_routines): Add libc-do-syscall object.
+	* sysdeps/unix/sysv/linux/i386/libc-cancellation.c: New file.
+	* sysdeps/unix/sysv/linux/i386/lowlevellock.h (lll_wait_tid): Use
+	cancellable futex syscall macro.
+	* sysdeps/unix/sysv/linux/i386/syscall_cancel.S: New file.
+	* sysdeps/unix/sysv/linux/i386/sysdep-cancel.h (PSEUDO): Redefine to
+	call __syscall_cancel function for cancellable syscalls.
+	* sysdeps/unix/sysv/linux/i386/sysdep.h (SYSCALL_CANCEL_ERROR): New
+	define.
+	(SYSCALL_CANCEL_ERRNO): Likewise.
+
 	* sysdeps/unix/sysv/linux/i386/fcntl.c (NO_CANCELLATION): Replace
 	by IS_IN (rtld).
 	* sysdeps/unix/sysv/linux/powerpc/powerpc32/sysdep-cancel.h (PSEUDO):
