@@ -57,6 +57,8 @@ pthread_barrier_init (barrier, attr, count)
   ibarrier->init_count = count;
   ibarrier->curr_event = 0;
 
+  /* XXX Don't use futex_private_if_supported here as long as there are still
+     assembly implementations that expect the value determined below.  */
 #ifdef __ASSUME_PRIVATE_FUTEX
   ibarrier->private = (iattr->pshared != PTHREAD_PROCESS_PRIVATE
 		       ? 0 : FUTEX_PRIVATE_FLAG);

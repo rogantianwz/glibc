@@ -17,8 +17,9 @@
    <http://www.gnu.org/licenses/>.  */
 
 #include "pthreadP.h"
-#include <lowlevellock.h>
+#include <futex-internal.h>
 #include <atomic.h>
+#include <libc-internal.h>
 
 
 unsigned long int __fork_generation attribute_hidden;
@@ -35,7 +36,7 @@ clear_once_control (void *arg)
      get interrupted (see __pthread_once), so all we need to relay to other
      threads is the state being reset again.  */
   atomic_store_relaxed (once_control, 0);
-  lll_futex_wake (once_control, INT_MAX, LLL_PRIVATE);
+  futex_wake ((unsigned int *) once_control, INT_MAX, FUTEX_PRIVATE);
 }
 
 
@@ -100,8 +101,11 @@ __pthread_once_slow (pthread_once_t *once_control, void (*init_routine) (void))
 	     is set and __PTHREAD_ONCE_DONE is not.  */
 	  if (val == newval)
 	    {
-	      /* Same generation, some other thread was faster. Wait.  */
-	      lll_futex_wait (once_control, newval, LLL_PRIVATE);
+	      /* Same generation, some other thread was faster.  Wait and
+		 retry.  Ignore the return value because all possible
+		 values (0, EAGAIN, EINTR) need to be handled the same.  */
+	      ignore_value (futex_wait ((unsigned int *)once_control,
+					(unsigned int) newval, FUTEX_PRIVATE));
 	      continue;
 	    }
 	}
@@ -122,7 +126,7 @@ __pthread_once_slow (pthread_once_t *once_control, void (*init_routine) (void))
       atomic_store_release (once_control, __PTHREAD_ONCE_DONE);
 
       /* Wake up all other threads.  */
-      lll_futex_wake (once_control, INT_MAX, LLL_PRIVATE);
+      futex_wake ((unsigned int *) once_control, INT_MAX, FUTEX_PRIVATE);
       break;
     }
 

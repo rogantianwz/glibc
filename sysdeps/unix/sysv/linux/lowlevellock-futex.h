@@ -22,6 +22,7 @@
 #ifndef __ASSEMBLER__
 #include <sysdep.h>
 #include <tls.h>
+#include <sys/time.h>
 #include <kernel-features.h>
 #endif
 
@@ -91,6 +92,19 @@
   lll_futex_syscall (4, futexp,                                 \
 		     __lll_private_flag (FUTEX_WAIT, private),  \
 		     val, timeout)
+
+#define lll_futex_abstimed_wait(futexp, val, abstime, private)		    \
+  ({									    \
+    /* Work around the fact that the kernel rejects negative timeout values \
+       despite them being valid.  */					    \
+    int ret;								    \
+    if (__glibc_unlikely (((abstime) != NULL) && ((abstime)->tv_sec < 0)))  \
+      ret = -ETIMEDOUT;							    \
+    else								    \
+      ret = lll_futex_timed_wait_bitset (futexp, val, abstime,		    \
+					 FUTEX_CLOCK_REALTIME, private);    \
+    ret;								    \
+  })
 
 #define lll_futex_timed_wait_bitset(futexp, val, timeout, clockbit, private) \
   lll_futex_syscall (6, futexp,                                         \

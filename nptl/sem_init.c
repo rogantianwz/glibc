@@ -21,22 +21,7 @@
 #include <shlib-compat.h>
 #include "semaphoreP.h"
 #include <kernel-features.h>
-
-/* Returns FUTEX_PRIVATE if pshared is zero and private futexes are supported;
-   returns FUTEX_SHARED otherwise.
-   TODO Remove when cleaning up the futex API throughout glibc.  */
-static __always_inline int
-futex_private_if_supported (int pshared)
-{
-  if (pshared != 0)
-    return LLL_SHARED;
-#ifdef __ASSUME_PRIVATE_FUTEX
-  return LLL_PRIVATE;
-#else
-  return THREAD_GETMEM (THREAD_SELF, header.private_futex)
-      ^ FUTEX_PRIVATE_FLAG;
-#endif
-}
+#include <futex-internal.h>
 
 
 int

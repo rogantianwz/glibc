@@ -63,6 +63,11 @@
     -_err;                                                              \
   })
 
+/* Wait until a lll_futex_wake call on FUTEXP, or time ABSTIME has passed.  */
+#define lll_futex_abstimed_wait(futexp, val, timeout, private)   \
+  (- __nacl_irt_futex.futex_wait_abs ((volatile int *) (futexp), \
+				      val, (abstime)));
+
 /* Wake up up to NR waiters on FUTEXP.  */
 #define lll_futex_wake(futexp, nr, private)                     \
   ({                                                            \

@@ -20,6 +20,8 @@
 #include <stdlib.h>
 #include <fork.h>
 #include <atomic.h>
+#include <libc-internal.h>
+#include <futex-internal.h>
 
 
 void
@@ -114,7 +116,8 @@ __unregister_atfork (dso_handle)
       atomic_decrement (&deleted->handler->refcntr);
       unsigned int val;
       while ((val = deleted->handler->refcntr) != 0)
-	lll_futex_wait (&deleted->handler->refcntr, val, LLL_PRIVATE);
+	ignore_value (futex_wait (&deleted->handler->refcntr, val,
+		      FUTEX_PRIVATE));
 
       deleted = deleted->next;
     }

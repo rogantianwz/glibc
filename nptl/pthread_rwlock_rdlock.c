@@ -19,6 +19,8 @@
 #include <errno.h>
 #include <sysdep.h>
 #include <lowlevellock.h>
+#include <futex-internal.h>
+#include <libc-internal.h>
 #include <pthread.h>
 #include <pthreadP.h>
 #include <stap-probe.h>
@@ -32,6 +34,8 @@ __pthread_rwlock_rdlock_slow (pthread_rwlock_t *rwlock)
 {
   int result = 0;
   bool wake = false;
+  int futex_shared =
+      (rwlock->__data.__shared == LLL_PRIVATE) ? FUTEX_PRIVATE : FUTEX_SHARED;
 
   /* Lock is taken in caller.  */
 
@@ -60,9 +64,10 @@ __pthread_rwlock_rdlock_slow (pthread_rwlock_t *rwlock)
       /* Free the lock.  */
       lll_unlock (rwlock->__data.__lock, rwlock->__data.__shared);
 
-      /* Wait for the writer to finish.  */
-      lll_futex_wait (&rwlock->__data.__readers_wakeup, waitval,
-		      rwlock->__data.__shared);
+      /* Wait for the writer to finish.  We do not check the return value
+	 because decide how to continue based on the state of the rwlock.  */
+      ignore_value (futex_wait (&rwlock->__data.__readers_wakeup, waitval,
+				futex_shared));
 
       /* Get the lock.  */
       lll_lock (rwlock->__data.__lock, rwlock->__data.__shared);
@@ -103,8 +108,7 @@ __pthread_rwlock_rdlock_slow (pthread_rwlock_t *rwlock)
   lll_unlock (rwlock->__data.__lock, rwlock->__data.__shared);
 
   if (wake)
-    lll_futex_wake (&rwlock->__data.__readers_wakeup, INT_MAX,
-		    rwlock->__data.__shared);
+    futex_wake (&rwlock->__data.__readers_wakeup, INT_MAX, futex_shared);
 
   return result;
 }
@@ -117,6 +121,8 @@ __pthread_rwlock_rdlock (pthread_rwlock_t *rwlock)
 {
   int result = 0;
   bool wake = false;
+  int futex_shared =
+      (rwlock->__data.__shared == LLL_PRIVATE) ? FUTEX_PRIVATE : FUTEX_SHARED;
 
   LIBC_PROBE (rdlock_entry, 1, rwlock);
 
@@ -164,8 +170,7 @@ __pthread_rwlock_rdlock (pthread_rwlock_t *rwlock)
       lll_unlock (rwlock->__data.__lock, rwlock->__data.__shared);
 
       if (wake)
-	lll_futex_wake (&rwlock->__data.__readers_wakeup, INT_MAX,
-			rwlock->__data.__shared);
+	futex_wake (&rwlock->__data.__readers_wakeup, INT_MAX, futex_shared);
 
       return result;
     }

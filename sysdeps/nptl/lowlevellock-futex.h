@@ -43,6 +43,11 @@
 #define lll_futex_timed_wait(futexp, val, timeout, private)             \
   -ENOSYS
 
+/* Wait until a lll_futex_wake call on FUTEXP, or ABSTIME, a point in time
+   counted by CLOCK_REALTIME, has passed.  ABSTIME must be normalized.  */
+#define lll_futex_abstimed_wait(futexp, val, abstime, private) \
+  -ENOSYS
+
 /* This macro should be defined only if FUTEX_CLOCK_REALTIME is also defined.
    If CLOCKBIT is zero, this is identical to lll_futex_timed_wait.
    If CLOCKBIT has FUTEX_CLOCK_REALTIME set, then it's the same but
